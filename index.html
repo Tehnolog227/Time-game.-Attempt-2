@@ -79,11 +79,11 @@
       border-radius: 5px;
     }
 
-    /* === Кнопка мусорки === */
-    #deleteButton {
+    /* === Кнопки управления === */
+    #deleteButton, #pauseButton {
       position: fixed;
       top: 10px;
-      right: 10px;
+      right: auto;
       background-color: rgba(255, 255, 255, 0.1);
       border: none;
       color: white;
@@ -97,7 +97,16 @@
       transition: background 0.3s ease;
     }
 
-    #deleteButton:hover {
+    #deleteButton {
+      right: 10px;
+    }
+
+    #pauseButton {
+      right: 60px;
+    }
+
+    #deleteButton:hover,
+    #pauseButton:hover {
       background-color: rgba(255, 255, 255, 0.2);
     }
   </style>
@@ -112,7 +121,8 @@
   </label>
 </div>
 
-<button id="deleteButton" title="Режим удаления">🗑️</button>
+<button id="pauseButton" title="Пауза">⏸️</button>
+<button id="deleteButton" title="Удалить фигуру">🗑️</button>
 
 <canvas id="gameCanvas"></canvas>
 
@@ -353,6 +363,19 @@
     btn.style.backgroundColor = deleteMode ? 'rgba(255, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.1)';
   });
 
+  // === Кнопка паузы ===
+
+  const pauseButton = document.getElementById('pauseButton');
+  const speedLabel = document.getElementById('speedValue');
+
+  pauseButton.addEventListener('click', () => {
+    timeMultiplier = 0;
+    slider.value = 0;
+    speedLabel.textContent = 'x0.0';
+  });
+
+  // === Клик по холсту ===
+
   canvas.addEventListener('click', (e) => {
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
@@ -366,13 +389,15 @@
 
         if (dx * dx + dy * dy < shape.radius * shape.radius) {
           shapes.splice(i, 1); // удаляем фигуру
-          return;
+          break;
         }
       }
-    } else {
-      const newShape = createRandomShape(mouseX, mouseY);
-      shapes.push(newShape);
+
+      return;
     }
+
+    const newShape = createRandomShape(mouseX, mouseY);
+    shapes.push(newShape);
   });
 
   // === Анимация ===
