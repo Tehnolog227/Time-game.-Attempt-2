@@ -32,9 +32,6 @@
       margin-bottom: 5px;
     }
   </style>
-
-  <!-- Звук при клике -->
-  <audio id="clickSound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3 " preload="auto"></audio>
 </head>
 <body>
 
@@ -67,19 +64,25 @@
   const colors = ['#ff6b6b', '#f7d794', '#6a89cc', '#60a3bc', '#95afc0'];
 
   function createRandomShape(x = Math.random() * canvas.width, y = Math.random() * canvas.height) {
+    const radius = Math.random() * 20 + 10;
     return {
       x: x,
       y: y,
       vx: (Math.random() - 0.5) * 2,
       vy: (Math.random() - 0.5) * 2,
-      radius: Math.random() * 20 + 10,
+      radius: radius,
+      mass: Math.PI * radius * radius,
       color: colors[Math.floor(Math.random() * colors.length)],
       type: ['circle', 'square', 'triangle', 'hexagon', 'star'][Math.floor(Math.random() * 5)],
       dragging: false,
       offsetX: 0,
       offsetY: 0,
       opacity: 0,
-      opacityTarget: 1
+      opacityTarget: 1,
+      angle: Math.random() * Math.PI * 2,
+      angularVelocity: (Math.random() - 0.5) * 0.1,
+      rotation: 0,
+      friction: 0.995
     };
   }
 
@@ -89,6 +92,11 @@
 
   function drawShape(ctx, shape) {
     ctx.globalAlpha = shape.opacity || 1;
+    ctx.save();
+    ctx.translate(shape.x, shape.y);
+    ctx.rotate(shape.rotation);
+    ctx.translate(-shape.x, -shape.y);
+
     ctx.beginPath();
     ctx.fillStyle = shape.color;
 
@@ -145,6 +153,7 @@
     }
 
     ctx.fill();
+    ctx.restore();
     ctx.globalAlpha = 1;
   }
 
@@ -216,14 +225,6 @@
 
     const newShape = createRandomShape(mouseX, mouseY);
     shapes.push(newShape);
-
-    const sound = document.getElementById('clickSound');
-    try {
-      sound.currentTime = 0;
-      sound.play();
-    } catch (err) {
-      console.warn("Звук не воспроизведён (возможно, из-за ограничений браузера)");
-    }
   });
 
   // === Анимация ===
@@ -236,11 +237,17 @@
 
     const effectiveDelta = delta * timeMultiplier;
 
+    // Движение и трение
     for (const shape of shapes) {
       if (!shape.dragging) {
         shape.x += shape.vx * effectiveDelta;
         shape.y += shape.vy * effectiveDelta;
 
+        shape.vx *= shape.friction;
+        shape.vy *= shape.friction;
+        shape.rotation += shape.angularVelocity;
+
+        // Отскок от стен
         if (shape.x < shape.radius || shape.x > canvas.width - shape.radius) {
           shape.vx *= -1;
         }
@@ -255,35 +262,54 @@
         if (shape.opacity > shape.opacityTarget) shape.opacity = shape.opacityTarget;
       }
     }
-// === Обнаружение столкновений между фигурами ===
-for (let i = 0; i < shapes.length; i++) {
-  for (let j = i + 1; j < shapes.length; j++) {
-    const a = shapes[i];
-    const b = shapes[j];
 
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const dist = Math.hypot(dx, dy);
-    const minDist = a.radius + b.radius;
+    // Столкновения между фигурами
+    for (let i = 0; i < shapes.length; i++) {
+      for (let j = i + 1; j < shapes.length; j++) {
+        const a = shapes[i];
+        const b = shapes[j];
 
-    if (dist < minDist) {
-      // Простое разрешение коллизии: меняем направление
-      a.vx *= -1;
-      a.vy *= -1;
-      b.vx *= -1;
-      b.vy *= -1;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dist = Math.hypot(dx, dy);
+        const minDist = a.radius + b.radius;
 
-      // Слегка раздвигаем фигуры, чтобы избежать застревания
-      const angle = Math.atan2(dy, dx);
-      const overlap = 0.5 * (minDist - dist + 0.1);
+        if (dist < minDist) {
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const dvx = b.vx - a.vx;
+          const dvy = b.vy - a.vy;
+          const vn = dvx * nx + dvy * ny;
 
-      a.x -= Math.cos(angle) * overlap;
-      a.y -= Math.sin(angle) * overlap;
-      b.x += Math.cos(angle) * overlap;
-      b.y += Math.sin(angle) * overlap;
+          if (vn > 0) continue;
+
+          const restitution = 0.8;
+          const j = -(1 + restitution) * vn / (1 / a.mass + 1 / b.mass);
+
+          a.vx -= j * nx / a.mass;
+          a.vy -= j * ny / a.mass;
+          b.vx += j * nx / b.mass;
+          b.vy += j * ny / b.mass;
+
+          // Вращение
+          const rx = (a.x + b.x) / 2 - a.x;
+          const ry = (a.y + b.y) / 2 - a.y;
+          const torque = rx * (j * ny) - ry * (j * nx);
+          a.angularVelocity -= torque / a.mass;
+
+          // Раздвигаем
+          const overlap = 0.5 * (minDist - dist + 0.1);
+          const push = nx * overlap;
+          const pvey = ny * overlap;
+
+          a.x -= push;
+          a.y -= pvey;
+          b.x += push;
+          b.y += pvey;
+        }
+      }
     }
-  }
-                      }
+
     drawShapes();
     requestAnimationFrame(update);
   }
