@@ -80,9 +80,9 @@
       opacity: 0,
       opacityTarget: 1,
       angle: Math.random() * Math.PI * 2,
-      angularVelocity: (Math.random() - 0.5) * 0.1,
+      angularVelocity: (Math.random() - 0.5) * 0.2, // увеличено для лучшего эффекта
       rotation: 0,
-      friction: 0.995
+      friction: 0.99
     };
   }
 
@@ -92,6 +92,8 @@
 
   function drawShape(ctx, shape) {
     ctx.globalAlpha = shape.opacity || 1;
+
+    // Вращение вокруг центра фигуры
     ctx.save();
     ctx.translate(shape.x, shape.y);
     ctx.rotate(shape.rotation);
@@ -153,6 +155,7 @@
     }
 
     ctx.fill();
+
     ctx.restore();
     ctx.globalAlpha = 1;
   }
@@ -243,17 +246,27 @@
         shape.x += shape.vx * effectiveDelta;
         shape.y += shape.vy * effectiveDelta;
 
-        shape.vx *= shape.friction;
-        shape.vy *= shape.friction;
-        shape.rotation += shape.angularVelocity;
+        // Защита от застревания в стенах
+        if (shape.x < shape.radius) shape.x = shape.radius;
+        if (shape.x > canvas.width - shape.radius) shape.x = canvas.width - shape.radius;
+        if (shape.y < shape.radius) shape.y = shape.radius;
+        if (shape.y > canvas.height - shape.radius) shape.y = canvas.height - shape.radius;
 
         // Отскок от стен
-        if (shape.x < shape.radius || shape.x > canvas.width - shape.radius) {
+        if (shape.x <= shape.radius || shape.x >= canvas.width - shape.radius) {
           shape.vx *= -1;
         }
-        if (shape.y < shape.radius || shape.y > canvas.height - shape.radius) {
+        if (shape.y <= shape.radius || shape.y >= canvas.height - shape.radius) {
           shape.vy *= -1;
         }
+
+        // Применяем вращение
+        shape.rotation += shape.angularVelocity;
+
+        // Затухание скорости и вращения
+        shape.vx *= shape.friction;
+        shape.vy *= shape.friction;
+        shape.angularVelocity *= 0.98;
       }
 
       // Плавное появление
@@ -291,21 +304,18 @@
           b.vx += j * nx / b.mass;
           b.vy += j * ny / b.mass;
 
-          // Вращение
+          // Вращение при столкновении
           const rx = (a.x + b.x) / 2 - a.x;
           const ry = (a.y + b.y) / 2 - a.y;
           const torque = rx * (j * ny) - ry * (j * nx);
           a.angularVelocity -= torque / a.mass;
 
-          // Раздвигаем
+          // Раздвигаем, чтобы не застряли
           const overlap = 0.5 * (minDist - dist + 0.1);
-          const push = nx * overlap;
-          const pvey = ny * overlap;
-
-          a.x -= push;
-          a.y -= pvey;
-          b.x += push;
-          b.y += pvey;
+          a.x -= nx * overlap;
+          a.y -= ny * overlap;
+          b.x += nx * overlap;
+          b.y += ny * overlap;
         }
       }
     }
