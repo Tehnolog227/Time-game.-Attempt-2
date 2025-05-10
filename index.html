@@ -80,9 +80,8 @@
       opacity: 0,
       opacityTarget: 1,
       angle: Math.random() * Math.PI * 2,
-      angularVelocity: (Math.random() - 0.5) * 0.2, // увеличено для лучшего эффекта
-      rotation: 0,
-      friction: 0.99
+      angularVelocity: (Math.random() - 0.5) * 0.2,
+      rotation: 0
     };
   }
 
@@ -240,7 +239,7 @@
 
     const effectiveDelta = delta * timeMultiplier;
 
-    // Движение и трение
+    // Движение без затухания
     for (const shape of shapes) {
       if (!shape.dragging) {
         shape.x += shape.vx * effectiveDelta;
@@ -262,11 +261,6 @@
 
         // Применяем вращение
         shape.rotation += shape.angularVelocity;
-
-        // Затухание скорости и вращения
-        shape.vx *= shape.friction;
-        shape.vy *= shape.friction;
-        shape.angularVelocity *= 0.98;
       }
 
       // Плавное появление
