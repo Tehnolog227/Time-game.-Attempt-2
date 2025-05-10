@@ -20,16 +20,51 @@
 
     #controls {
       position: fixed;
-      top: 10px;
-      left: 10px;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
       background: rgba(0, 0, 0, 0.7);
-      padding: 10px;
-      border-radius: 8px;
+      padding: 15px 25px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+      z-index: 10;
     }
 
-    label {
+    #controls label {
       display: block;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #timeSlider {
+      width: 300px;
+      height: 10px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+    }
+
+    #timeSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      background-color: #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+      cursor: pointer;
+      margin-top: -7px;
+    }
+
+    #timeSlider::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      background-color: #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+      cursor: pointer;
     }
   </style>
 </head>
@@ -229,7 +264,7 @@
     shapes.push(newShape);
   });
 
-  // === Свайпы для создания фигуры с импульсом ===
+  // === Свайпы на мобильных устройствах ===
 
   let swipeStartX = 0;
   let swipeStartY = 0;
@@ -240,7 +275,6 @@
     swipeStartX = touch.clientX - rect.left;
     swipeStartY = touch.clientY - rect.top;
 
-    // Проверка перетаскивания
     for (const shape of shapes) {
       const dx = swipeStartX - shape.x;
       const dy = swipeStartY - shape.y;
@@ -256,7 +290,6 @@
 
   canvas.addEventListener('touchend', (e) => {
     if (isDragging) {
-      // Если это перетаскивание — не считаем за свайп
       for (const shape of shapes) {
         shape.dragging = false;
       }
@@ -273,9 +306,8 @@
     const dy = endY - swipeStartY;
     const distance = Math.hypot(dx, dy);
 
-    // Минимальное расстояние для свайпа
     if (distance > 50) {
-      const speedFactor = 0.05; // регулирует силу броска
+      const speedFactor = 0.05;
 
       const newShape = createRandomShape(swipeStartX, swipeStartY);
       newShape.vx = dx * speedFactor;
