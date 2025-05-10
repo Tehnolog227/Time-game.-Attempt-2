@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Игра с управлением временем</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #0a0f2c;
+      font-family: sans-serif;
+      color: white;
+    }
+
+    canvas {
+      display: block;
+      background-color: #000033;
+      cursor: grab;
+    }
+
+    #controls {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+  </style>
+
+  <!-- Звук при клике -->
+  <audio id="clickSound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3 " preload="auto"></audio>
+</head>
+<body>
+
+<div id="controls">
+  <label>
+    Скорость времени:
+    <input type="range" id="timeSlider" min="-2" max="5" step="0.1" value="1" />
+    <span id="speedValue">x1.0</span>
+  </label>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  let timeMultiplier = 1;
+  const shapes = [];
+  const shapeCount = 20;
+
+  const colors = ['#ff6b6b', '#f7d794', '#6a89cc', '#60a3bc', '#95afc0'];
+
+  function createRandomShape(x = Math.random() * canvas.width, y = Math.random() * canvas.height) {
+    return {
+      x: x,
+      y: y,
+      vx: (Math.random() - 0.5) * 2,
+      vy: (Math.random() - 0.5) * 2,
+      radius: Math.random() * 20 + 10,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      type: ['circle', 'square', 'triangle', 'hexagon', 'star'][Math.floor(Math.random() * 5)],
+      dragging: false,
+      offsetX: 0,
+      offsetY: 0,
+      opacity: 0,
+      opacityTarget: 1
+    };
+  }
+
+  for (let i = 0; i < shapeCount; i++) {
+    shapes.push(createRandomShape());
+  }
+
+  function drawShape(ctx, shape) {
+    ctx.globalAlpha = shape.opacity || 1;
+    ctx.beginPath();
+    ctx.fillStyle = shape.color;
+
+    switch (shape.type) {
+      case 'circle':
+        ctx.arc(shape.x, shape.y, shape.radius, 0, Math.PI * 2);
+        break;
+
+      case 'square':
+        ctx.rect(shape.x - shape.radius, shape.y - shape.radius, shape.radius * 2, shape.radius * 2);
+        break;
+
+      case 'triangle':
+        const height = shape.radius * Math.sqrt(3);
+        ctx.moveTo(shape.x, shape.y - height / 2);
+        ctx.lineTo(shape.x - shape.radius, shape.y + height / 2);
+        ctx.lineTo(shape.x + shape.radius, shape.y + height / 2);
+        ctx.closePath();
+        break;
+
+      case 'hexagon':
+        ctx.moveTo(shape.x + shape.radius, shape.y);
+        for (let i = 1; i <= 6; i++) {
+          const angle = i * Math.PI / 3;
+          ctx.lineTo(shape.x + shape.radius * Math.cos(angle), shape.y + shape.radius * Math.sin(angle));
+        }
+        ctx.closePath();
+        break;
+
+      case 'star':
+        const spikes = 5;
+        const outerRadius = shape.radius;
+        const innerRadius = shape.radius / 2;
+        let rot = Math.PI / 2 * 3;
+        let step = Math.PI / spikes;
+
+        ctx.moveTo(shape.x, shape.y - outerRadius);
+        for (let i = 0; i < spikes; i++) {
+          const x = shape.x + Math.cos(rot) * outerRadius;
+          const y = shape.y + Math.sin(rot) * outerRadius;
+          ctx.lineTo(x, y);
+          rot += step;
+
+          const x2 = shape.x + Math.cos(rot) * innerRadius;
+          const y2 = shape.y + Math.sin(rot) * innerRadius;
+          ctx.lineTo(x2, y2);
+          rot += step;
+        }
+        ctx.closePath();
+        break;
+
+      default:
+        ctx.arc(shape.x, shape.y, shape.radius, 0, Math.PI * 2);
+    }
+
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  function drawShapes() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (const shape of shapes) {
+      drawShape(ctx, shape);
+    }
+  }
+
+  // === Обработчики событий ===
+
+  const slider = document.getElementById('timeSlider');
+  const speedLabel = document.getElementById('speedValue');
+  slider.addEventListener('input', () => {
+    timeMultiplier = parseFloat(slider.value);
+    speedLabel.textContent = `x${timeMultiplier.toFixed(1)}`;
+  });
+
+  let isDragging = false;
+
+  canvas.addEventListener('mousedown', (e) => {
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    for (const shape of shapes) {
+      const dx = mouseX - shape.x;
+      const dy = mouseY - shape.y;
+      if (dx * dx + dy * dy < shape.radius * shape.radius) {
+        shape.dragging = true;
+        shape.offsetX = dx;
+        shape.offsetY = dy;
+        isDragging = true;
+        break;
+      }
+    }
+  });
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      for (const shape of shapes) {
+        if (shape.dragging) {
+          shape.x = e.clientX - shape.offsetX;
+          shape.y = e.clientY - shape.offsetY;
+        }
+      }
+    }
+  });
+
+  canvas.addEventListener('mouseup', () => {
+    for (const shape of shapes) {
+      shape.dragging = false;
+    }
+    isDragging = false;
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    for (const shape of shapes) {
+      shape.dragging = false;
+    }
+    isDragging = false;
+  });
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const newShape = createRandomShape(mouseX, mouseY);
+    shapes.push(newShape);
+
+    const sound = document.getElementById('clickSound');
+    try {
+      sound.currentTime = 0;
+      sound.play();
+    } catch (err) {
+      console.warn("Звук не воспроизведён (возможно, из-за ограничений браузера)");
+    }
+  });
+
+  // === Анимация ===
+
+  let lastTime = 0;
+
+  function update(time) {
+    const delta = (time - lastTime) / 16.6667;
+    lastTime = time;
+
+    const effectiveDelta = delta * timeMultiplier;
+
+    for (const shape of shapes) {
+      if (!shape.dragging) {
+        shape.x += shape.vx * effectiveDelta;
+        shape.y += shape.vy * effectiveDelta;
+
+        if (shape.x < shape.radius || shape.x > canvas.width - shape.radius) {
+          shape.vx *= -1;
+        }
+        if (shape.y < shape.radius || shape.y > canvas.height - shape.radius) {
+          shape.vy *= -1;
+        }
+      }
+
+      // Плавное появление
+      if (shape.opacity < shape.opacityTarget) {
+        shape.opacity += 0.05;
+        if (shape.opacity > shape.opacityTarget) shape.opacity = shape.opacityTarget;
+      }
+    }
+
+    drawShapes();
+    requestAnimationFrame(update);
+  }
+
+  requestAnimationFrame(update);
+</script>
+</body>
+</html>
