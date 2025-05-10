@@ -47,11 +47,10 @@
       height: 6px;
       -webkit-appearance: none;
       appearance: none;
-      background: linear-gradient(to right, #a28ef5, #c7a4ff); /* фиолетовый трек */
+      background: linear-gradient(to right, #a28ef5, #c7a4ff);
       border-radius: 5px;
     }
 
-    /* Chrome, Edge, Safari */
     #timeSlider::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
@@ -64,7 +63,6 @@
       margin-top: -7px;
     }
 
-    /* Firefox */
     #timeSlider::-moz-range-thumb {
       width: 20px;
       height: 20px;
@@ -80,6 +78,28 @@
       background: linear-gradient(to right, #a28ef5, #c7a4ff);
       border-radius: 5px;
     }
+
+    /* === Кнопка мусорки === */
+    #deleteButton {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      font-size: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 9999;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+      transition: background 0.3s ease;
+    }
+
+    #deleteButton:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -91,6 +111,8 @@
     <span id="speedValue">x1.0</span>
   </label>
 </div>
+
+<button id="deleteButton" title="Режим удаления">🗑️</button>
 
 <canvas id="gameCanvas"></canvas>
 
@@ -269,15 +291,6 @@
     isDragging = false;
   });
 
-  canvas.addEventListener('click', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    const newShape = createRandomShape(mouseX, mouseY);
-    shapes.push(newShape);
-  });
-
   // === Свайпы на мобильных устройствах ===
 
   let swipeStartX = 0;
@@ -326,6 +339,38 @@
       const newShape = createRandomShape(swipeStartX, swipeStartY);
       newShape.vx = dx * speedFactor;
       newShape.vy = dy * speedFactor;
+      shapes.push(newShape);
+    }
+  });
+
+  // === Режим удаления ===
+
+  let deleteMode = false;
+
+  document.getElementById('deleteButton').addEventListener('click', () => {
+    deleteMode = !deleteMode;
+    const btn = document.getElementById('deleteButton');
+    btn.style.backgroundColor = deleteMode ? 'rgba(255, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.1)';
+  });
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    if (deleteMode) {
+      for (let i = 0; i < shapes.length; i++) {
+        const shape = shapes[i];
+        const dx = mouseX - shape.x;
+        const dy = mouseY - shape.y;
+
+        if (dx * dx + dy * dy < shape.radius * shape.radius) {
+          shapes.splice(i, 1); // удаляем фигуру
+          return;
+        }
+      }
+    } else {
+      const newShape = createRandomShape(mouseX, mouseY);
       shapes.push(newShape);
     }
   });
