@@ -19,13 +19,14 @@
       cursor: grab;
     }
 
+    /* === Ползунок времени === */
     #controls {
       position: fixed;
       bottom: 40px;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(0, 0, 0, 0.7);
-      padding: 15px 25px;
+      padding: 20px;
       border-radius: 12px;
       text-align: center;
       box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
@@ -36,9 +37,10 @@
 
     #controls label {
       display: block;
-      margin-bottom: 8px;
-      font-size: 16px;
+      margin-bottom: 10px;
+      font-size: 18px;
       font-weight: bold;
+      color: #ffffff;
     }
 
     #timeSlider {
@@ -49,6 +51,7 @@
       background: transparent;
     }
 
+    /* Для Chrome, Edge, Safari */
     #timeSlider::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
@@ -61,6 +64,14 @@
       margin-top: -7px;
     }
 
+    #timeSlider::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(to right, #a28ef5, #c7a4ff); /* фиолетовый трек */
+      border-radius: 5px;
+    }
+
+    /* Для Firefox */
     #timeSlider::-moz-range-thumb {
       width: 24px;
       height: 24px;
@@ -68,6 +79,13 @@
       border-radius: 50%;
       box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
       cursor: pointer;
+    }
+
+    #timeSlider::-moz-range-track {
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(to right, #a28ef5, #c7a4ff); /* фиолетовый трек */
+      border-radius: 5px;
     }
   </style>
 </head>
@@ -329,7 +347,7 @@
 
     const effectiveDelta = delta * timeMultiplier;
 
-    // Сохраняем историю перед обновлением
+    // Сохраняем историю для перемотки назад
     for (const shape of shapes) {
       if (!shape.dragging && timeMultiplier >= 0) {
         shape.history = shape.history || [];
