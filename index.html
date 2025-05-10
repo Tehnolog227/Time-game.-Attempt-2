@@ -82,7 +82,7 @@
       angle: Math.random() * Math.PI * 2,
       angularVelocity: (Math.random() - 0.5) * 0.2,
       rotation: 0,
-      history: [] // <-- история координат и поворотов
+      history: []
     };
   }
 
@@ -229,6 +229,61 @@
     shapes.push(newShape);
   });
 
+  // === Свайпы для создания фигуры с импульсом ===
+
+  let swipeStartX = 0;
+  let swipeStartY = 0;
+
+  canvas.addEventListener('touchstart', (e) => {
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    swipeStartX = touch.clientX - rect.left;
+    swipeStartY = touch.clientY - rect.top;
+
+    // Проверка перетаскивания
+    for (const shape of shapes) {
+      const dx = swipeStartX - shape.x;
+      const dy = swipeStartY - shape.y;
+      if (dx * dx + dy * dy < shape.radius * shape.radius) {
+        shape.dragging = true;
+        shape.offsetX = dx;
+        shape.offsetY = dy;
+        isDragging = true;
+        break;
+      }
+    }
+  });
+
+  canvas.addEventListener('touchend', (e) => {
+    if (isDragging) {
+      // Если это перетаскивание — не считаем за свайп
+      for (const shape of shapes) {
+        shape.dragging = false;
+      }
+      isDragging = false;
+      return;
+    }
+
+    const touch = e.changedTouches[0];
+    const rect = canvas.getBoundingClientRect();
+    const endX = touch.clientX - rect.left;
+    const endY = touch.clientY - rect.top;
+
+    const dx = endX - swipeStartX;
+    const dy = endY - swipeStartY;
+    const distance = Math.hypot(dx, dy);
+
+    // Минимальное расстояние для свайпа
+    if (distance > 50) {
+      const speedFactor = 0.05; // регулирует силу броска
+
+      const newShape = createRandomShape(swipeStartX, swipeStartY);
+      newShape.vx = dx * speedFactor;
+      newShape.vy = dy * speedFactor;
+      shapes.push(newShape);
+    }
+  });
+
   // === Анимация ===
 
   let lastTime = 0;
@@ -242,6 +297,8 @@
     // Сохраняем историю перед обновлением
     for (const shape of shapes) {
       if (!shape.dragging && timeMultiplier >= 0) {
+        shape.history = shape.history || [];
+
         shape.history.push({
           x: shape.x,
           y: shape.y,
@@ -258,17 +315,17 @@
     for (const shape of shapes) {
       if (!shape.dragging) {
         if (timeMultiplier >= 0) {
-          // Обычное время
           shape.x += shape.vx * effectiveDelta;
           shape.y += shape.vy * effectiveDelta;
           shape.rotation += shape.angularVelocity * effectiveDelta;
 
-          // Отскок от стен
+          // Защита от застревания
           if (shape.x < shape.radius) shape.x = shape.radius;
           if (shape.x > canvas.width - shape.radius) shape.x = canvas.width - shape.radius;
           if (shape.y < shape.radius) shape.y = shape.radius;
           if (shape.y > canvas.height - shape.radius) shape.y = canvas.height - shape.radius;
 
+          // Отскок от стен
           if (
             shape.x <= shape.radius ||
             shape.x >= canvas.width - shape.radius ||
@@ -281,7 +338,7 @@
 
         } else {
           // Время назад → читаем из истории
-          if (shape.history.length > 0) {
+          if (shape.history && shape.history.length > 0) {
             const oldPos = shape.history.pop();
             shape.x = oldPos.x;
             shape.y = oldPos.y;
@@ -326,7 +383,7 @@
             b.vx += j * nx / b.mass;
             b.vy += j * ny / b.mass;
 
-            // Вращение
+            // Вращение при столкновении
             const rx = (a.x + b.x) / 2 - a.x;
             const ry = (a.y + b.y) / 2 - a.y;
             const torque = rx * (j * ny) - ry * (j * nx);
