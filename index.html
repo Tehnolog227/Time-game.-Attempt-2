@@ -255,7 +255,35 @@
         if (shape.opacity > shape.opacityTarget) shape.opacity = shape.opacityTarget;
       }
     }
+// === Обнаружение столкновений между фигурами ===
+for (let i = 0; i < shapes.length; i++) {
+  for (let j = i + 1; j < shapes.length; j++) {
+    const a = shapes[i];
+    const b = shapes[j];
 
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const dist = Math.hypot(dx, dy);
+    const minDist = a.radius + b.radius;
+
+    if (dist < minDist) {
+      // Простое разрешение коллизии: меняем направление
+      a.vx *= -1;
+      a.vy *= -1;
+      b.vx *= -1;
+      b.vy *= -1;
+
+      // Слегка раздвигаем фигуры, чтобы избежать застревания
+      const angle = Math.atan2(dy, dx);
+      const overlap = 0.5 * (minDist - dist + 0.1);
+
+      a.x -= Math.cos(angle) * overlap;
+      a.y -= Math.sin(angle) * overlap;
+      b.x += Math.cos(angle) * overlap;
+      b.y += Math.sin(angle) * overlap;
+    }
+  }
+                      }
     drawShapes();
     requestAnimationFrame(update);
   }
