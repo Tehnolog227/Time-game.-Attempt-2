@@ -80,10 +80,9 @@
     }
 
     /* === Кнопки управления === */
-    #deleteButton, #pauseButton {
+    #pauseButton, #deleteButton {
       position: fixed;
-      top: 10px;
-      right: auto;
+      right: 10px;
       background-color: rgba(255, 255, 255, 0.1);
       border: none;
       color: white;
@@ -97,16 +96,16 @@
       transition: background 0.3s ease;
     }
 
-    #deleteButton {
-      right: 10px;
-    }
-
     #pauseButton {
-      right: 60px;
+      top: 10px;
     }
 
-    #deleteButton:hover,
-    #pauseButton:hover {
+    #deleteButton {
+      top: 60px;
+    }
+
+    #pauseButton:hover,
+    #deleteButton:hover {
       background-color: rgba(255, 255, 255, 0.2);
     }
   </style>
@@ -121,7 +120,7 @@
   </label>
 </div>
 
-<button id="pauseButton" title="Пауза">⏸️</button>
+<button id="pauseButton" title="Пауза/Продолжить">⏸️</button>
 <button id="deleteButton" title="Удалить фигуру">🗑️</button>
 
 <canvas id="gameCanvas"></canvas>
@@ -252,9 +251,30 @@
 
   const slider = document.getElementById('timeSlider');
   const speedLabel = document.getElementById('speedValue');
+  const pauseButton = document.getElementById('pauseButton');
+
+  let lastTimeMultiplierBeforePause = 1;
+
   slider.addEventListener('input', () => {
     timeMultiplier = parseFloat(slider.value);
     speedLabel.textContent = `x${timeMultiplier.toFixed(1)}`;
+  });
+
+  pauseButton.addEventListener('click', () => {
+    if (timeMultiplier === 0) {
+      // Возобновляем прошлую скорость
+      timeMultiplier = lastTimeMultiplierBeforePause;
+      slider.value = timeMultiplier.toFixed(1);
+      speedLabel.textContent = `x${timeMultiplier.toFixed(1)}`;
+      pauseButton.textContent = '⏸️';
+    } else {
+      // Ставим на паузу
+      lastTimeMultiplierBeforePause = timeMultiplier;
+      timeMultiplier = 0;
+      slider.value = 0;
+      speedLabel.textContent = 'x0.0';
+      pauseButton.textContent = '▶️'; // меняем иконку на "воспроизведение"
+    }
   });
 
   let isDragging = false;
@@ -363,18 +383,7 @@
     btn.style.backgroundColor = deleteMode ? 'rgba(255, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.1)';
   });
 
-  // === Кнопка паузы ===
-
-  const pauseButton = document.getElementById('pauseButton');
-  const speedLabel = document.getElementById('speedValue');
-
-  pauseButton.addEventListener('click', () => {
-    timeMultiplier = 0;
-    slider.value = 0;
-    speedLabel.textContent = 'x0.0';
-  });
-
-  // === Клик по холсту ===
+  // === Клик по холсту: создание или удаление ===
 
   canvas.addEventListener('click', (e) => {
     const rect = canvas.getBoundingClientRect();
