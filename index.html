@@ -79,9 +79,37 @@
       border-radius: 5px;
     }
 
-    /* === Кнопки управления === */
-    #pauseButton, #deleteButton {
+    /* === Центральная кнопка паузы === */
+    #pauseButton {
       position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      font-size: 32px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 9998;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    #pauseButton:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    #pauseButton:active {
+      transform: translate(-50%, -50%) scale(0.95);
+    }
+
+    /* === Кнопка удаления === */
+    #deleteButton {
+      position: fixed;
+      top: 10px;
       right: 10px;
       background-color: rgba(255, 255, 255, 0.1);
       border: none;
@@ -96,15 +124,6 @@
       transition: background 0.3s ease;
     }
 
-    #pauseButton {
-      top: 10px;
-    }
-
-    #deleteButton {
-      top: 60px;
-    }
-
-    #pauseButton:hover,
     #deleteButton:hover {
       background-color: rgba(255, 255, 255, 0.2);
     }
@@ -262,8 +281,8 @@
 
   pauseButton.addEventListener('click', () => {
     if (timeMultiplier === 0) {
-      // Возобновляем прошлую скорость
-      timeMultiplier = lastTimeMultiplierBeforePause;
+      // Возобновляем
+      timeMultiplier = lastTimeMultiplierBeforePause || 1;
       slider.value = timeMultiplier.toFixed(1);
       speedLabel.textContent = `x${timeMultiplier.toFixed(1)}`;
       pauseButton.textContent = '⏸️';
@@ -273,7 +292,7 @@
       timeMultiplier = 0;
       slider.value = 0;
       speedLabel.textContent = 'x0.0';
-      pauseButton.textContent = '▶️'; // меняем иконку на "воспроизведение"
+      pauseButton.textContent = '▶️';
     }
   });
 
@@ -405,7 +424,7 @@
       return;
     }
 
-    const newShape = createRandomShape(mouseX, mouseY);
+    const newShape = createRandomShape(e.clientX, e.clientY);
     shapes.push(newShape);
   });
 
