@@ -79,31 +79,27 @@
       border-radius: 5px;
     }
 
-    /* === Центральная кнопка паузы === */
+    /* === Кнопка паузы === */
     #pauseButton {
       position: fixed;
-      top: 50%;
+      bottom: 90px;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translateX(-50%);
       background-color: rgba(255, 255, 255, 0.1);
       border: none;
       color: white;
-      font-size: 32px;
-      width: 60px;
-      height: 60px;
+      font-size: 24px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       cursor: pointer;
       z-index: 9998;
       box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-      transition: background 0.3s ease, transform 0.2s ease;
+      transition: all 0.3s ease;
     }
 
     #pauseButton:hover {
       background-color: rgba(255, 255, 255, 0.2);
-    }
-
-    #pauseButton:active {
-      transform: translate(-50%, -50%) scale(0.95);
     }
 
     /* === Кнопка удаления === */
@@ -281,13 +277,11 @@
 
   pauseButton.addEventListener('click', () => {
     if (timeMultiplier === 0) {
-      // Возобновляем
       timeMultiplier = lastTimeMultiplierBeforePause || 1;
       slider.value = timeMultiplier.toFixed(1);
       speedLabel.textContent = `x${timeMultiplier.toFixed(1)}`;
       pauseButton.textContent = '⏸️';
     } else {
-      // Ставим на паузу
       lastTimeMultiplierBeforePause = timeMultiplier;
       timeMultiplier = 0;
       slider.value = 0;
@@ -424,7 +418,7 @@
       return;
     }
 
-    const newShape = createRandomShape(e.clientX, e.clientY);
+    const newShape = createRandomShape(mouseX, mouseY);
     shapes.push(newShape);
   });
 
